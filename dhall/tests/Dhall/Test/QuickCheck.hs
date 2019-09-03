@@ -37,6 +37,7 @@ import Test.Tasty (TestTree)
 import Test.Tasty.QuickCheck (QuickCheckTests(..))
 import Text.Megaparsec (SourcePos(..), Pos)
 
+import qualified Data.Bifunctor
 import qualified Control.Spoon
 import qualified Codec.Serialise
 import qualified Data.Coerce
@@ -373,6 +374,15 @@ isSameAsSelf expression =
             Right importlessExpression -> isRight (Dhall.TypeCheck.typeOf importlessExpression)
             Left _ -> False
 
+typeInferenceIsIndependentOfNormalization :: Expr () Import -> Property
+typeInferenceIsIndependentOfNormalization expression =
+        isRight (type_ expression)
+    ==> type_ (Dhall.Core.normalize expression) === (type_ expression :: Either () (Expr () Import))
+  where
+    type_ = Data.Bifunctor.first (const ()) . Dhall.TypeCheck.typeWithA filterOutEmbeds Dhall.Context.empty
+    filterOutEmbeds :: Typer a
+    filterOutEmbeds _ = Equivalent (BoolLit True) Bool -- This could be any ill-typed expression.
+
 tests :: TestTree
 tests =
     testProperties'
@@ -383,6 +393,10 @@ tests =
           )
         , ( "everything well-typed should normalize"
           , Test.QuickCheck.property everythingWellTypedNormalizes
+          , QuickCheckTests 100000
+          )
+        , ( "type inference is independent of normalization"
+          , Test.QuickCheck.property typeInferenceIsIndependentOfNormalization
           , QuickCheckTests 100000
           )
         , ( "isNormalized should be consistent with normalize"

@@ -50,9 +50,6 @@ successTest prefix = do
                  typeInferenceDirectory </> "success/unit/AssertNaN"
 
                , typeInferenceDirectory </> "success/prelude" -- TODO
-
-                 -- https://github.com/dhall-lang/dhall-haskell/issues/1274
-               , typeInferenceDirectory </> "success/unit/RecordProjectionByTypeJudgmentalEquality"
                ]
 
     Test.Util.testCase prefix skip $ do

@@ -755,7 +755,7 @@ typeWithA tpa = loop
 
                         Dhall.Map.unorderedTraverseWithKey_ process ktsT
 
-                        return (Record ktsT)
+                        return (Record (Dhall.Map.intersection ktsR ktsT))
                     _ -> do
                         Left (TypeError ctx e (CantProjectByExpression t))
 
