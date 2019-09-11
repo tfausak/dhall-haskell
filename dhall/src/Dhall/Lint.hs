@@ -12,6 +12,7 @@ import Dhall.Core (Binding(..), Expr(..), Import, Var(..), subExpressions)
 
 import qualified Dhall.Core
 import qualified Dhall.Optics
+import qualified Lens.Family
 
 {-| Automatically improve a Dhall expression
 
@@ -39,11 +40,15 @@ removeLetInLet _ = Nothing
 -- Remove unused Let bindings.
 removeUnusedBindings :: Eq a => Expr s a -> Maybe (Expr s a)
 -- Don't remove assertions!
-removeUnusedBindings (Let (Binding _ _ (Assert _) :| []) _) = Nothing
+removeUnusedBindings (Let (Binding _ _ e :| []) _) | isOrContainsAssert e = Nothing
 removeUnusedBindings (Let (Binding a _ _ :| []) d)
     | not (V a 0 `Dhall.Core.freeIn` d) =
         Just (Dhall.Core.shift (-1) (V a 0) d)
 removeUnusedBindings _ = Nothing
+
+isOrContainsAssert :: Expr s a -> Bool
+isOrContainsAssert (Assert _) = True
+isOrContainsAssert e = Lens.Family.anyOf subExpressions isOrContainsAssert e
 
 -- Unfold Let blocks into nested Let bindings binding a single variable each.
 -- Pre-processing step before applying the removeUnusedBindings rule.
