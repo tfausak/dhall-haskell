@@ -188,7 +188,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), mempty)
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Pretty)
-import Dhall.Core (Binding(..), Expr)
+import Dhall.Core (Expr)
 import Dhall.Import (SemanticCacheMode(..))
 import Dhall.TypeCheck (X)
 import Dhall.Map (Map)
@@ -650,12 +650,12 @@ convertToHomogeneousMaps (Conversion {..}) e0 = loop (Core.normalize e0)
             a' = loop a
             b' = loop b
 
-        Core.Let (Binding src0 a src1 b src2 c) d ->
-            Core.Let (Binding src0 a src1 b' src2 c') d'
+        Core.Let a b c d ->
+            Core.Let a b' c' d'
           where
-            b' = fmap (fmap loop) b
-            c' =            loop  c
-            d' =            loop  d
+            b' = fmap loop b
+            c' =      loop c
+            d' =      loop d
 
         Core.Annot a b ->
             Core.Annot a' b'
