@@ -11,8 +11,9 @@ module Dhall.LSP.Backend.Parsing
   )
 where
 
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Text (Text)
-import Dhall.Core (Expr(..), Import, Var(..))
+import Dhall.Core (Expr(..), Import, Binding(..), Var(..))
 import Dhall.Src (Src(..))
 import Dhall.Parser
 import Dhall.Parser.Token
@@ -226,7 +227,7 @@ binderExprFromText txt =
       value <- try (do _equal; expr)
           <|> (do skipManyTill anySingle (lookAhead boundary <|> _in); return holeExpr)
       inner <- parseBinderExpr
-      return (Let name mType value inner)
+      return (Let (Binding name mType value :| []) inner)
 
     forallBinder = do
       _forall

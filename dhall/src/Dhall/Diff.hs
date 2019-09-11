@@ -25,7 +25,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Doc, Pretty)
 import Data.Void (Void)
-import Dhall.Core (Chunks (..), Const(..), Expr(..), Var(..))
+import Dhall.Core (Binding(..), Chunks (..), Const(..), Expr(..), Var(..))
 import Dhall.Binary (ToTerm)
 import Dhall.Map (Map)
 import Dhall.Set (Set)
@@ -650,20 +650,21 @@ diff l@(BoolIf {}) r =
     mismatch l r
 diff l r@(BoolIf {}) =
     mismatch l r
-diff l@(Let {}) r@(Let {}) =
-    enclosed' "    " (keyword "in" <> "  ") (docs l r)
+diff (Let asL bL ) (Let asR bR) =
+    enclosed' "" (keyword "in" <> "  ")
+        (Data.List.NonEmpty.zipWith docA asL asR <> pure docB)
   where
-    docs (Let aL bL cL dL) (Let aR bR cR dR) =
-        Data.List.NonEmpty.cons (align doc) (docs dL dR)
+    docA (Binding cL dL eL) (Binding cR dR eR) = align doc
       where
         doc =   keyword "let"
             <>  " "
-            <>  format " " (diffLabel aL aR)
-            <>  format " " (diffMaybe (colon <> " ") diff bL bR)
+            <>  format " " (diffLabel cL cR)
+            <>  format " " (diffMaybe (colon <> " ") diff dL dR)
             <>  equals
             <>  " "
-            <>  diff cL cR
-    docs aL aR = pure (diff aL aR)
+            <>  diff eL eR
+
+    docB = diff bL bR
 diff l@(Let {}) r =
     mismatch l r
 diff l r@(Let {}) =

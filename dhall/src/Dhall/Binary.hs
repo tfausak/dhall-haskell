@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE OverloadedStrings  #-}
@@ -26,6 +25,7 @@ module Dhall.Binary
 import Codec.CBOR.Term (Term(..))
 import Control.Applicative (empty, (<|>))
 import Control.Exception (Exception)
+import Data.Void (Void, absurd)
 import Dhall.Core
     ( Binding(..)
     , Chunks(..)
@@ -38,16 +38,16 @@ import Dhall.Core
     , ImportHashed(..)
     , ImportMode(..)
     , ImportType(..)
-    , MultiLet(..)
     , Scheme(..)
     , URL(..)
     , Var(..)
     )
 
 import Data.Foldable (toList)
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Void (Void, absurd)
+import Prelude hiding (exponent)
 import GHC.Float (double2Float, float2Double)
 
 import qualified Crypto.Hash
@@ -371,13 +371,11 @@ instance ToTerm a => ToTerm (Expr Void a) where
         t₁ = encode t₀
     encode (Embed x) =
         encode x
-    encode (Let x mA a b) =
+    encode (Let as₀ b₀) =
         TList ([ TInt 25 ] ++ as₁ ++ [ b₁ ])
       where
-        MultiLet as₀ b₀ = Dhall.Core.multiLet x mA a b
-
         as₁ = do
-            Binding x₀ mA₀ a₀ <- toList as₀
+            Binding x mA₀ a₀ <- toList as₀
 
             let mA₁ = case mA₀ of
                     Nothing  -> TNull
@@ -385,7 +383,7 @@ instance ToTerm a => ToTerm (Expr Void a) where
 
             let a₁ = encode a₀
 
-            [ TString x₀, mA₁, a₁ ]
+            [ TString x, mA₁, a₁ ]
 
         b₁ = encode b₀
     encode (Annot t₀ _T₀) =
@@ -726,11 +724,17 @@ instance FromTerm a => FromTerm (Expr s a) where
 
                 a₀  <- decode a₁
 
-                b₀ <- case ls₁ of
-                    [ b₁ ] -> decode b₁
-                    _      -> process ls₁
+                let binding = Binding x mA₀ a₀
 
-                return (Let x mA₀ a₀ b₀)
+                case ls₁ of
+                    [ b₁ ] -> do
+                        b₀ <- decode b₁
+
+                        return (Let (binding :| []) b₀)
+                    _ -> do
+                        Let (l₀ :| ls₀) b₀ <- process ls₁
+
+                        return (Let (binding :| (l₀ : ls₀)) b₀)
             process _ = do
                 empty
 

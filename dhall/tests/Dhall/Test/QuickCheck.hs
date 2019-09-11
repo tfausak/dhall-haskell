@@ -12,7 +12,8 @@ import Codec.Serialise (DeserialiseFailure(..))
 import Data.Either (isRight)
 import Dhall.Map (Map)
 import Dhall.Core
-    ( Chunks(..)
+    ( Binding(..)
+    , Chunks(..)
     , Const(..)
     , Directory(..)
     , Expr(..)
@@ -137,6 +138,11 @@ instance (Ord k, Arbitrary k, Arbitrary v) => Arbitrary (Map k v) where
             map Dhall.Map.fromList
         .   shrink
         .   Dhall.Map.toList
+
+instance (Arbitrary s, Arbitrary a) => Arbitrary (Binding s a) where
+    arbitrary = lift3 Binding
+
+    shrink = genericShrink
 
 instance (Arbitrary s, Arbitrary a) => Arbitrary (Chunks s a) where
     arbitrary = do
